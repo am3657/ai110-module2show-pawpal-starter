@@ -13,12 +13,15 @@ class Task:
     priority: str = ""
 
     def mark_complete(self) -> None:
+        """Mark this task as completed."""
         self.completion_status = True
 
     def update_frequency(self, frequency: str) -> None:
+        """Change how often this task recurs."""
         self.frequency = frequency
 
     def set_priority(self, priority: str) -> None:
+        """Change this task's priority."""
         self.priority = priority
 
 
@@ -47,12 +50,15 @@ class Owner:
         self.time_available = time_available
 
     def add_pet(self, pet: Pet) -> None:
+        """Add a pet to this owner's list of pets."""
         self.pets.append(pet)
 
     def remove_pet(self, pet: Pet) -> None:
+        """Remove a pet from this owner's list of pets."""
         self.pets.remove(pet)
 
     def get_all_tasks(self) -> List[Task]:
+        """Return every task across all of this owner's pets."""
         return [task for pet in self.pets for task in pet.tasks]
 
 
@@ -60,12 +66,15 @@ class Scheduler:
     PRIORITY_ORDER = {"high": 0, "medium": 1, "low": 2, "": 3}
 
     def add_task(self, pet: Pet, task: Task) -> None:
+        """Add a task to the given pet's task list."""
         pet.tasks.append(task)
 
     def remove_task(self, pet: Pet, task: Task) -> None:
+        """Remove a task from the given pet's task list."""
         pet.tasks.remove(task)
 
     def produce_plan(self, owner: Owner) -> List[Task]:
+        """Build a priority-sorted list of tasks that fit within the owner's available time."""
         pending_tasks = [task for task in owner.get_all_tasks() if not task.completion_status]
         pending_tasks.sort(key=lambda task: self.PRIORITY_ORDER.get(task.priority, 3))
 
@@ -79,6 +88,7 @@ class Scheduler:
         return plan
 
     def explain_plan(self, owner: Owner) -> str:
+        """Render the produced plan as a readable, per-pet daily schedule."""
         plan = self.produce_plan(owner)
         if not plan:
             return "No tasks fit within the available time."

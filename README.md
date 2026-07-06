@@ -72,6 +72,13 @@ Sample test output:
 # Paste your pytest output here
 ```
 
+collected 2 items
+
+tests/test_pawpal.py::test_task_completion PASSED [ 50%]
+tests/test_pawpal.py::test_task_addition PASSED [100%]
+
+============================================ 2 passed in 0.02s =============================================
+
 ## 📐 Smarter Scheduling
 
 > Fill in once you've implemented scheduling logic.
