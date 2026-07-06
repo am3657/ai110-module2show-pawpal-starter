@@ -1,0 +1,44 @@
+classDiagram
+    class Owner {
+        -String name
+        -int age
+        -List~Pet~ pets
+        -Scheduler scheduler
+        -int timeAvailable
+        +addPet(Pet pet) void
+        +removePet(Pet pet) void
+    }
+
+    class Pet {
+        -String name
+        -String breed
+        -String species
+        -int age
+        -List~Task~ tasks
+    }
+
+    class Task {
+        -String description
+        -String type
+        -int duration
+        -String frequency
+        -boolean completionStatus
+        -String priority
+        +markComplete() void
+        +updateFrequency(String frequency) void
+        +setPriority(String priority) void
+    }
+
+    class Scheduler {
+        +addTask(Pet pet, Task task) void
+        +removeTask(Pet pet, Task task) void
+        +getTask(Pet pet, String id) Task
+        +producePlan(Owner owner) List~Task~
+        +explainPlan(Owner owner) String
+    }
+
+    Owner "1" *-- "0..*" Pet : owns
+    Owner "1" --> "1" Scheduler : uses
+    Pet "1" *-- "0..*" Task : has
+    Scheduler "1" ..> "0..*" Pet : accesses
+    Scheduler "1" ..> "1" Owner : accesses
