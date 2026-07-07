@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timedelta
 from typing import List
 
 
@@ -64,6 +65,7 @@ class Owner:
 
 class Scheduler:
     PRIORITY_ORDER = {"high": 0, "medium": 1, "low": 2, "": 3}
+    DEFAULT_START_TIME = "08:00"
 
     def add_task(self, pet: Pet, task: Task) -> None:
         """Add a task to the given pet's task list."""
@@ -96,6 +98,12 @@ class Scheduler:
         total_time = sum(task.duration for task in plan)
         lines = [f"Plan for {owner.name} ({total_time}/{owner.time_available} min used):"]
 
+        clock = datetime.strptime(self.DEFAULT_START_TIME, "%H:%M")
+        start_times = {}
+        for task in plan:
+            start_times[id(task)] = clock.strftime("%H:%M")
+            clock += timedelta(minutes=task.duration)
+
         for pet in owner.pets:
             pet_tasks = [task for task in plan if task in pet.tasks]
             if not pet_tasks:
@@ -104,7 +112,8 @@ class Scheduler:
             lines.append(f"\nDaily plan for {pet.name} ({pet.breed}):")
             for task in pet_tasks:
                 lines.append(
-                    f"  {task.description} ({task.duration} min) [priority: {task.priority or 'none'}]"
+                    f"  {start_times[id(task)]} — {task.description} ({task.duration} min) "
+                    f"[priority: {task.priority or 'none'}]"
                 )
 
         return "\n".join(lines)
