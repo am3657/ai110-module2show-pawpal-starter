@@ -58,26 +58,30 @@ Clean Luna's litter box (15 min) [priority: low]
 
 ## 🧪 Testing PawPal+
 
-```bash
-# Run the full test suite:
-pytest
+PS C:\Codepath class\ai110-module2show-pawpal-starter> python -m pytest tests\test_pawpal.py
+=================================== test session starts ===================================
+platform win32 -- Python 3.13.7, pytest-9.0.3, pluggy-1.6.0
+rootdir: C:\Codepath class\ai110-module2show-pawpal-starter
+collected 5 items
 
-# Run with coverage:
-pytest --cov
-```
+tests\test_pawpal.py ..... [100%]
 
-Sample test output:
+==================================== 5 passed in 0.04s ====================================
 
-```
-# Paste your pytest output here
-```
+**Test 1**: test_sort_by_time()
+Tests to see if tasks given out of order is sorted in chronological order by the start time.
 
-collected 2 items
+**Test2**: test_recurring_tasks()
+Tests to see if completing a daily task spawns a new task due the following day.
 
-tests/test_pawpal.py::test_task_completion PASSED [ 50%]
-tests/test_pawpal.py::test_task_addition PASSED [100%]
+**Test3**: test_detect_time_conflicts()
+Tests to see if two tasks scheduled at the same start time produce a single conflict warning.
 
-============================================ 2 passed in 0.02s =============================================
+**Test 4**:test_task_completion()
+Tests if a status of a task is updated correctly
+
+**Test 5**: def test_task_addition()
+Tests if a task is being added to a pet correctly when adding new task
 
 ## 📐 Smarter Scheduling
 
