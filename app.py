@@ -1,5 +1,5 @@
 import streamlit as st
-from pawlpal_system import Owner, Pet, Scheduler, Task
+from pawpal_system import Owner, Pet, Scheduler, Task
 
 st.set_page_config(page_title="PawPal+", page_icon="🐾", layout="centered")
 
@@ -9,33 +9,11 @@ st.markdown(
     """
 Welcome to the PawPal+ starter app.
 
-This file is intentionally thin. It gives you a working Streamlit app so you can start quickly,
-but **it does not implement the project logic**. Your job is to design the system and build it.
 
-Use this app as your interactive demo once your backend classes/functions exist.
 """
 )
 
-with st.expander("Scenario", expanded=True):
-    st.markdown(
-        """
-**PawPal+** is a pet care planning assistant. It helps a pet owner plan care tasks
-for their pet(s) based on constraints like time, priority, and preferences.
 
-You will design and implement the scheduling logic and connect it to this Streamlit UI.
-"""
-    )
-
-with st.expander("What you need to build", expanded=True):
-    st.markdown(
-        """
-At minimum, your system should:
-- Represent pet care tasks (what needs to happen, how long it takes, priority)
-- Represent the pet and the owner (basic info and preferences)
-- Build a plan/schedule for a day that chooses and orders tasks based on constraints
-- Explain the plan (why each task was chosen and when it happens)
-"""
-    )
 
 st.divider()
 
@@ -105,13 +83,16 @@ st.caption("Add a few tasks. These feed directly into your scheduler.")
 # task creation until at least one pet exists.
 task_pet_name = st.selectbox("Pet for this task", [p.name for p in owner.pets]) if owner.pets else None
 
-col1, col2, col3 = st.columns(3)
+col1, col2, col3, col4 = st.columns(4)
 with col1:
     task_title = st.text_input("Task title", value="Morning walk")
 with col2:
-    duration = st.number_input("Duration (minutes)", min_value=1, max_value=240, value=20)
+    duration = st.number_input("Duration (minutes)", min_value=0, max_value=240, value=20)
 with col3:
     priority = st.selectbox("Priority", ["low", "medium", "high"], index=2)
+with col4:
+    # "one-time" isn't in Task.FREQUENCY_INTERVALS, so it just never recurs.
+    frequency = st.selectbox("Frequency", ["daily", "weekly", "one-time"], index=0)
 
 if st.button("Add task"):
     if task_pet_name is None:
@@ -120,7 +101,7 @@ if st.button("Add task"):
         # task_pet_name only gives us a name string from the selectbox, so look up
         # the actual Pet object it refers to before attaching a task to it.
         pet = next(p for p in owner.pets if p.name == task_pet_name)
-        task = Task(description=task_title, duration=int(duration), frequency="daily")
+        task = Task(description=task_title, duration=int(duration), frequency=frequency)
         task.set_priority(priority)
         # Scheduler owns task add/remove; Pet's own tasks list is the single source
         # of truth (no separate task list lives on Scheduler or Owner).
@@ -130,47 +111,73 @@ if st.button("Add task"):
 # list, so this table can never drift out of sync with what the scheduler sees.
 all_tasks = owner.get_all_tasks()
 if all_tasks:
+    status_filter = st.radio(
+        "Filter tasks", ["All", "Pending", "Completed"], horizontal=True, key="task_status_filter"
+    )
+    # Filter on completion_status directly (mirrors Owner.get_tasks_by_completion's
+    # own logic) so we can keep each task's pet alongside it for the table/selector.
+    all_pairs = [(pet, t) for pet in owner.pets for t in pet.tasks]
+    if status_filter == "Pending":
+        task_pairs = [(pet, t) for pet, t in all_pairs if not t.completion_status]
+    elif status_filter == "Completed":
+        task_pairs = [(pet, t) for pet, t in all_pairs if t.completion_status]
+    else:
+        task_pairs = all_pairs
+
     st.write("Current tasks:")
-    st.table(
-        [
-            {
-                "pet": pet.name,
-                "task": t.description,
-                "duration_minutes": t.duration,
-                "priority": t.priority,
-                "completed": t.completion_status,
-            }
-            for pet in owner.pets
-            for t in pet.tasks
-        ]
-    )
+    if task_pairs:
+        st.table(
+            [
+                {
+                    "pet": pet.name,
+                    "task": t.description,
+                    "duration_minutes": t.duration,
+                    "priority": t.priority,
+                    "frequency": t.frequency,
+                    "due_date": t.due_date,
+                    "completed": t.completion_status,
+                }
+                for pet, t in task_pairs
+            ]
+        )
 
-    task_pairs = [(pet, t) for pet in owner.pets for t in pet.tasks]
-    task_index = st.selectbox(
-        "Select a task",
-        range(len(task_pairs)),
-        format_func=lambda i: f"{task_pairs[i][0].name}: {task_pairs[i][1].description} ({task_pairs[i][1].duration} min)",
-        key="task_to_manage",
-    )
+        task_index = st.selectbox(
+            "Select a task",
+            range(len(task_pairs)),
+            format_func=lambda i: f"{task_pairs[i][0].name}: {task_pairs[i][1].description} ({task_pairs[i][1].duration} min)",
+            key="task_to_manage",
+        )
 
-    action_col1, action_col2 = st.columns(2)
-    with action_col1:
-        if st.button("Mark complete"):
-            pet, task = task_pairs[task_index]
-            task.mark_complete()
-            st.rerun()
-    with action_col2:
-        if st.button("Remove task"):
-            pet, task = task_pairs[task_index]
-            scheduler.remove_task(pet, task)
-            st.rerun()
+        action_col1, action_col2 = st.columns(2)
+        with action_col1:
+            if st.button("Mark complete"):
+                pet, task = task_pairs[task_index]
+                # complete_task (not task.mark_complete()) so a recurring task's
+                # next occurrence actually gets spawned and registered on the pet.
+                next_task = scheduler.complete_task(pet, task)
+                if next_task is not None:
+                    st.toast(
+                        f"'{task.description}' recurs — next occurrence due {next_task.due_date}.",
+                        icon="🔁",
+                    )
+                st.rerun()
+        with action_col2:
+            if st.button("Remove task"):
+                pet, task = task_pairs[task_index]
+                scheduler.remove_task(pet, task)
+                st.rerun()
+    else:
+        st.info("No tasks match this filter.")
 else:
     st.info("No tasks yet. Add one above.")
 
 st.divider()
 
 st.subheader("Build Schedule")
-st.caption("Generate today's schedule based on priority and available time.")
+st.caption(
+    "Generate today's schedule based on priority and available time. "
+    "Tasks are ordered by priority, then sorted chronologically within each pet's plan."
+)
 
 if st.button("Generate schedule"):
     if not owner.get_all_tasks():
@@ -178,4 +185,12 @@ if st.button("Generate schedule"):
     else:
         # explain_plan internally calls produce_plan (priority sort + time-budget
         # fit) and formats the result, so this one call gives us the full plan.
-        st.text(scheduler.explain_plan(owner))
+        schedule_text = scheduler.explain_plan(owner)
+        st.text(schedule_text)
+
+        # explain_plan already embeds any "⚠ Warning: ..." lines from
+        # detect_time_conflicts inline; surface them as popups too so a
+        # conflict isn't easy to miss in a long schedule.
+        conflict_lines = [line for line in schedule_text.splitlines() if line.startswith("⚠ Warning:")]
+        for warning in conflict_lines:
+            st.toast(warning.removeprefix("⚠ Warning: "), icon="⚠️")

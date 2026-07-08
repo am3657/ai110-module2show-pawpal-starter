@@ -83,12 +83,12 @@ tests/test_pawpal.py::test_task_addition PASSED [100%]
 
 > Fill in once you've implemented scheduling logic.
 
-| Feature           | Method(s) | Notes                             |
-| ----------------- | --------- | --------------------------------- |
-| Task sorting      |           | e.g., by priority, duration       |
-| Filtering         |           | e.g., skip tasks if time runs out |
-| Conflict handling |           | e.g., overlapping time slots      |
-| Recurring tasks   |           | e.g., daily vs. weekly            |
+| Feature           | Method(s)                                 | Notes                        |
+| ----------------- | ----------------------------------------- | ---------------------------- |
+| Task sorting      | produce_plan(), sort_by_time()            | Priority, then chronological |
+| Filtering         | get_tasks_by_completion(), produce_plan() | Pending and due tasks only   |
+| Conflict handling | detect_time_conflicts()                   | Warns on same time slot      |
+| Recurring tasks   | get_next_due_date(), complete_task()      | Daily/weekly using timedelta |
 
 ## 📸 Demo Walkthrough
 

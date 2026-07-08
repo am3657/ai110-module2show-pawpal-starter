@@ -1,4 +1,4 @@
-from pawlpal_system import Pet, Scheduler, Task
+from pawpal_system import Pet, Scheduler, Task
 
 
 def test_task_completion():
