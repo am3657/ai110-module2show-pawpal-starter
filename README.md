@@ -50,11 +50,11 @@ Today's Schedule
 Plan for Alex (55/60 min used):
 
 Daily plan for Rex (Labrador):
-Walk Rex (30 min) [priority: high]
+8: 00 - Walk Rex (30 min) [priority: high]
 
 Daily plan for Luna (Siamese):
-Feed Luna (10 min) [priority: high]
-Clean Luna's litter box (15 min) [priority: low]
+8:20 - Feed Luna (10 min) [priority: high]
+8:45 - Clean Luna's litter box (15 min) [priority: low]
 
 ## 🧪 Testing PawPal+
 
@@ -87,21 +87,22 @@ Tests if a task is being added to a pet correctly when adding new task
 
 > Fill in once you've implemented scheduling logic.
 
-| Feature           | Method(s)                                 | Notes                        |
-| ----------------- | ----------------------------------------- | ---------------------------- |
-| Task sorting      | produce_plan(), sort_by_time()            | Priority, then chronological |
-| Filtering         | get_tasks_by_completion(), produce_plan() | Pending and due tasks only   |
-| Conflict handling | detect_time_conflicts()                   | Warns on same time slot      |
-| Recurring tasks   | get_next_due_date(), complete_task()      | Daily/weekly using timedelta |
+| Feature           | Method(s)                                 | Notes                               |
+| ----------------- | ----------------------------------------- | ----------------------------------- |
+| Task sorting      | produce_plan(), sort_by_time()            | Priority, then chronological        |
+| Filtering         | get_tasks_by_completion(), produce_plan() | Pending and due tasks only          |
+| Conflict handling | detect_time_conflicts()                   | Warns on same time slot             |
+| Recurring tasks   | get_next_due_date(), complete_task()      | Daily/weekly using timedelta module |
 
 ## 📸 Demo Walkthrough
 
 Describe your app in numbered steps so a reader can follow along without watching a video:
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
-
-**Screenshot or video** _(optional)_: <!-- Insert a screenshot or link to a demo video here -->
+1. Add Owner details, availability
+2. Can add multiple pets
+3. Can add multiple tasks for each individual pet (including its type, priority, frequency)
+4. Mark Complete to update status
+5. Can Filter the tasks based on completion
+6. Can either Delete a task or let the app create a new entry for the next day/week to make it a recurring task
+7. Finally, Generate a plan based on the pending tasks in a chronological order, tailored to each pet (the priority of the tasks are also important when making the plan)
+8. The Plan is explained clearly for you to review.

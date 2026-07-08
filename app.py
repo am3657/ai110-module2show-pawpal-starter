@@ -57,6 +57,7 @@ with pet_col4:
 
 if st.button("Add pet"):
     owner.add_pet(Pet(name=pet_name, breed=breed, species=species, age=int(pet_age)))
+    st.success(f"Added {pet_name}.")
 
 if owner.pets:
     st.write("Current pets:")
@@ -71,7 +72,11 @@ if owner.pets:
         key="pet_to_remove",
     )
     if st.button("Remove pet"):
+        removed_name = owner.pets[pet_index].name
         owner.remove_pet(owner.pets[pet_index])
+        # st.success wouldn't survive the st.rerun() below (its render is
+        # discarded), so use st.toast, which is designed to persist across it.
+        st.toast(f"Removed {removed_name}.", icon="🗑️")
         st.rerun()
 else:
     st.info("No pets yet. Add one above.")
@@ -106,6 +111,7 @@ if st.button("Add task"):
         # Scheduler owns task add/remove; Pet's own tasks list is the single source
         # of truth (no separate task list lives on Scheduler or Owner).
         scheduler.add_task(pet, task)
+        st.success(f"Added task '{task_title}' for {pet.name}.")
 
 # Read tasks straight from the Pet objects rather than a separate session_state
 # list, so this table can never drift out of sync with what the scheduler sees.
@@ -155,6 +161,9 @@ if all_tasks:
                 # complete_task (not task.mark_complete()) so a recurring task's
                 # next occurrence actually gets spawned and registered on the pet.
                 next_task = scheduler.complete_task(pet, task)
+                # st.success wouldn't survive the st.rerun() below (its render is
+                # discarded), so use st.toast, which is designed to persist across it.
+                st.toast(f"Marked '{task.description}' complete.", icon="✅")
                 if next_task is not None:
                     st.toast(
                         f"'{task.description}' recurs — next occurrence due {next_task.due_date}.",
@@ -165,6 +174,7 @@ if all_tasks:
             if st.button("Remove task"):
                 pet, task = task_pairs[task_index]
                 scheduler.remove_task(pet, task)
+                st.toast(f"Removed '{task.description}'.", icon="🗑️")
                 st.rerun()
     else:
         st.info("No tasks match this filter.")
@@ -179,18 +189,31 @@ st.caption(
     "Tasks are ordered by priority, then sorted chronologically within each pet's plan."
 )
 
+PRIORITY_BADGES = {"high": "🔴 High", "medium": "🟡 Medium", "low": "🟢 Low"}
+
 if st.button("Generate schedule"):
     if not owner.get_all_tasks():
         st.warning("Add at least one task before generating a schedule.")
     else:
-        # explain_plan internally calls produce_plan (priority sort + time-budget
-        # fit) and formats the result, so this one call gives us the full plan.
-        schedule_text = scheduler.explain_plan(owner)
-        st.text(schedule_text)
+        # build_schedule returns structured data (not pre-formatted text), so
+        # each pet gets its own section instead of one flat text block.
+        schedule = scheduler.build_schedule(owner)
 
-        # explain_plan already embeds any "⚠ Warning: ..." lines from
-        # detect_time_conflicts inline; surface them as popups too so a
-        # conflict isn't easy to miss in a long schedule.
-        conflict_lines = [line for line in schedule_text.splitlines() if line.startswith("⚠ Warning:")]
-        for warning in conflict_lines:
-            st.toast(warning.removeprefix("⚠ Warning: "), icon="⚠️")
+        if not schedule["pets"]:
+            st.info("No tasks fit within the available time.")
+        else:
+            st.caption(f"{schedule['total_time']} / {owner.time_available} min used")
+
+            for warning in schedule["conflicts"]:
+                st.error(f"⚠️ {warning}")
+                st.toast(warning, icon="⚠️")
+
+            for section in schedule["pets"]:
+                pet = section["pet"]
+                st.markdown(f"**🐾 {pet.name} ({pet.breed})**")
+                for entry in section["tasks"]:
+                    task = entry["task"]
+                    badge = PRIORITY_BADGES.get(task.priority, "⚪ None")
+                    st.markdown(
+                        f"- `{entry['time']}` {task.description} ({task.duration} min) — {badge}"
+                    )

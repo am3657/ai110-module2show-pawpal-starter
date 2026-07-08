@@ -1,0 +1,9 @@
+exception: ElementList()
+metric: Time used today = 20 / 60 min
+markdown: Welcome to the PawPal+ starter app.
+markdown: ### Add a Pet
+markdown: Current pets:
+markdown: ### Tasks
+markdown: Current tasks:
+markdown: **08:00** — Morning walk _(20 min)_ &nbsp; 🔴 high
+expander label: 🐾 Mochi (Mixed)

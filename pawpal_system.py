@@ -157,14 +157,15 @@ class Scheduler:
                 warnings.append(f"Conflict at {time_slot}: {names} are scheduled at the same time.")
         return warnings
 
-    def explain_plan(self, owner: Owner) -> str:
-        """Render the produced plan as a readable, per-pet daily schedule."""
+    def build_schedule(self, owner: Owner) -> dict:
+        """Return the produced plan as structured data (not pre-formatted text).
+
+        explain_plan renders this same structure as text; a UI can instead read
+        it directly to build real widgets (tables, expanders, etc.) per pet.
+        """
         plan = self.produce_plan(owner)
         if not plan:
-            return "No tasks fit within the available time."
-
-        total_time = sum(task.duration for task in plan)
-        lines = [f"Plan for {owner.name} ({total_time}/{owner.time_available} min used):"]
+            return {"total_time": 0, "conflicts": [], "pets": []}
 
         clock = datetime.strptime(self.DEFAULT_START_TIME, "%H:%M")
         start_times = {}
@@ -172,9 +173,7 @@ class Scheduler:
             start_times[id(task)] = clock.strftime("%H:%M")
             clock += timedelta(minutes=task.duration)
 
-        for warning in self.detect_time_conflicts(plan, start_times):
-            lines.append(f"⚠ Warning: {warning}")
-
+        pets = []
         for pet in owner.pets:
             pet_tasks = self.sort_by_time(
                 [task for task in plan if task in pet.tasks], start_times
@@ -182,10 +181,39 @@ class Scheduler:
             if not pet_tasks:
                 continue
 
+            pets.append(
+                {
+                    "pet": pet,
+                    "tasks": [
+                        {"time": start_times[id(task)], "task": task} for task in pet_tasks
+                    ],
+                }
+            )
+
+        return {
+            "total_time": sum(task.duration for task in plan),
+            "conflicts": self.detect_time_conflicts(plan, start_times),
+            "pets": pets,
+        }
+
+    def explain_plan(self, owner: Owner) -> str:
+        """Render the produced plan as a readable, per-pet daily schedule."""
+        schedule = self.build_schedule(owner)
+        if not schedule["pets"]:
+            return "No tasks fit within the available time."
+
+        lines = [f"Plan for {owner.name} ({schedule['total_time']}/{owner.time_available} min used):"]
+
+        for warning in schedule["conflicts"]:
+            lines.append(f"⚠ Warning: {warning}")
+
+        for section in schedule["pets"]:
+            pet = section["pet"]
             lines.append(f"\nDaily plan for {pet.name} ({pet.breed}):")
-            for task in pet_tasks:
+            for entry in section["tasks"]:
+                task = entry["task"]
                 lines.append(
-                    f"  {start_times[id(task)]} — {task.description} ({task.duration} min) "
+                    f"  {entry['time']} — {task.description} ({task.duration} min) "
                     f"[priority: {task.priority or 'none'}]"
                 )
 
